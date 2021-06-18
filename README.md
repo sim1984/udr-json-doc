@@ -60,14 +60,14 @@
 
 Далее библиотеку необходимо зарегистрировать в вашей базе данных. Для этого необходимо выполнить следующий скрипт [udrJSON.sql](https://github.com/mnf71/udr-lkJSON/blob/main/udrJSON.sql).
 
----
+***
 Замечание.
 
 Библиотека разрабатывалась с учётом того, что она будет работать с однобайтовой кодировкой, такой как WIN1251.
 Если ваша база создана в кодировке UTF8, то необходимо модифицировать скрипт регистрации заменив в нём `VARCHAR(32765)` на
 `VARCHAR(32765) CHARACTER SET NONE`, `VARCHAR(128)` - `VARCHAR(128) CHARACTER SET NONE`, `VARCHAR(32)` - `VARCHAR(32) CHARACTER SET NONE`,
 `CHAR(3)` - `CHAR(3) CHARACTER SET NONE`.
----
+***
 
 ```
 isql "inet4://localhost/test" -user SYSDBA -password masterkey -i udrJSON.sql
