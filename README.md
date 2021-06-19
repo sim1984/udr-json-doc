@@ -13,9 +13,9 @@
 
 Существует также специальная сборка Firebird со встроенной функцией BLOB_APPEND, которая решает проблему конкатенации BLOB, но пока она не доступна для широкого использования.
 
-В Firebird 5.0 ввели специальный системный пакет RDB$BLOB_UTILS, который так же позволяет бороться с проблемой конкатенации BLOB. В настоящий момент Firebird 5.0  на начальной стадии разработки, и пока не может быть использован в промышленных системах.
+В Firebird 5.0 ввели специальный системный пакет RDB$BLOB_UTILS, который так же позволяет бороться с проблемой конкатенации BLOB. В настоящий момент Firebird 5.0 на начальной стадии разработки, и пока не может быть использован в промышленных системах.
 
-Вторая проблема которую вам необходимо решить - экранирование значений перед тем как использовать их внутри JSON. В принципе это можно успешно решить в рамках PSQL, однако учтите, что скорее всего подобные функции для символьных типов данных будут содержать множество вызов REPLACE, что негативно повлияет на производительность.
+Вторая проблема которую вам необходимо решить — экранирование значений перед тем как использовать их внутри JSON. В принципе это можно успешно решить в рамках PSQL, однако учтите, что скорее всего подобные функции для символьных типов данных будут содержать множество вызов REPLACE, что негативно повлияет на производительность.
 
 ```sql
  -- экранирование строк
@@ -55,8 +55,8 @@
 Вы можете собрать библиотеку скачав исходные код по ссылке выше, либо скачать готовую библиотеку под нужную вам платформу по адресу [https://github.com/mnf71/udr-lkJSON/tree/main/lib](https://github.com/mnf71/udr-lkJSON/tree/main/lib).
 
 После скачивания или сборки готовую библиотеку необходимо разместить в каталог
-- в Windows -- `Firebird30\plugins\udr`, где Firebird30 - корневой каталог установки Firebird
-- в Linix -- `/firebird/plugins/udr`
+- в Windows — `Firebird30\plugins\udr`, где Firebird30 — корневой каталог установки Firebird
+- в Linix — `/firebird/plugins/udr`
 
 Далее библиотеку необходимо зарегистрировать в вашей базе данных. Для этого необходимо выполнить следующий скрипт [udrJSON.sql](https://github.com/mnf71/udr-lkJSON/blob/main/udrJSON.sql).
 
@@ -78,14 +78,14 @@ isql "inet4://localhost/test" -user SYSDBA -password masterkey -i udrJSON.sql
 В скрипте происходит вызов функции для разбора JSON и его сборка обратно в строку. Если исходный JSON будет такой же, как вновь собранный, то всё в порядке. В реальности полностью совпадать строки не будут, так как сборка JSON происходит без учёта красивого форматирования. Но содержимое должно быть идентичным.
 
 Проверка происходит для двух наборов (процедура + функция)
-- `js$func.ParseText` - разбор JSON заданного в виде BLOB. `js$func.GenerateText` - сборка JSON с возвратом BLOB.
-- `js$func.ParseString` - разбор JSON заданного в виде VARCHAR(N). `js$func.GenerateString` - сборка JSON с возвратом VARCHAR(N).
+- `js$func.ParseText` — разбор JSON заданного в виде BLOB. `js$func.GenerateText` — сборка JSON с возвратом BLOB.
+- `js$func.ParseString` — разбор JSON заданного в виде VARCHAR(N). `js$func.GenerateString` — сборка JSON с возвратом VARCHAR(N).
 
 ## Как это работает
 
 Библиотека udr-lkJSON основана на свободной библиотеки lkJSON для генерирования и разбора JSON. Поэтому чтобы хорошо представлять себе как работать с UDR-lkJSON желательно ознакомится с библиотекой [lkjson](https://sourceforge.net/projects/lkjson/).
 
-При разборе JSON часть элементов могут быть простыми типами, которые существуют в Firebird (INTEGER, DOUBLE PRECISION, VARCHAR(N), BOOLEAN), а часть сложными -- объекты и массивы.
+При разборе JSON часть элементов могут быть простыми типами, которые существуют в Firebird (INTEGER, DOUBLE PRECISION, VARCHAR(N), BOOLEAN), а часть сложными — объекты и массивы.
 Сложные объекты возвращаются как указатель на внутренний объект из библиотеки lkJSON. Указатель отображается в домен `TY$POINTER`. Этот домен определён следующим образом:
 
 ```sql
@@ -131,7 +131,7 @@ END
 Функция `Dispose` предназначена для освобождения указателя на JSON объект. Указатели, которые надо принудительно освобождать, появляются в результате парсинга или создания JSON. 
 Не следует вызывать его для промежуточных объектов при разборе или сборке JSON. Он требуется только для объекта верхнего уровня.
 
-Функция `Field` возвращает указатель на поле объекта. Первым параметром задаётся указатель на объект, вторым -- имя поля. Если поля не существует, то функция вернёт пустой указатель (Это не NULL, а `x'0000000000000000'`).
+Функция `Field` возвращает указатель на поле объекта. Первым параметром задаётся указатель на объект, вторым — имя поля. Если поля не существует, то функция вернёт пустой указатель (Это не NULL, а `x'0000000000000000'`).
 
 Функция `Count_` возвращает количество элементов в списке или полей в объекте. В качестве параметра задаётся указатель на объект или список.
 
@@ -144,13 +144,13 @@ END
 
 Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число, где
 
-- 0 -- jsBase
-- 1 -- jsNumber
-- 2 -- jsString
-- 3 -- jsBoolean
-- 4 -- jsNull
-- 5 -- jsList
-- 6 -- jsObject
+- 0 — jsBase
+- 1 — jsNumber
+- 2 — jsString
+- 3 — jsBoolean
+- 4 — jsNull
+- 5 — jsList
+- 6 — jsObject
 
 Если параметр Self не задан, то вернёт 0.
 
@@ -178,7 +178,7 @@ END
 
 Как видно из комментария этот пакет является калькой с класса `TlkJSONboolean`. Он предназначен для работы с типом `BOOLEAN`.
 
-Функция `Value_` возвращает или устанавливает в значение логического типа для объекта заданного в параметре Self. Если параметр Bool не задан, то значение будет возвращено, если задан - установлено.
+Функция `Value_` возвращает или устанавливает в значение логического типа для объекта заданного в параметре Self. Если параметр Bool не задан, то значение будет возвращено, если задан — установлено.
 Обратите внимание, NULL не возвращается и не может быть установлено этим методом, для этого существует отдельный пакет `JS$NULL`.
 
 Функция `Generate` возвращает указатель на объект `TlkJSONboolean`, который представляет собой значение логического типа в JSON.
@@ -220,9 +220,9 @@ END
 
 Процедура `ForEach` извлекает каждый элемент списка или каждое поле объекта из указателя на JSON заданного в Self.
 Возвращаются следующие значения:
-- Idx - индекс элемента списка или номер поля в объекте. Начинается с 1.
-- Name - имя очередного поля, если Self -- объект. Или индекс элемента списка, начиная с 0, если Self - список. 
-- Obj - указатель на очередной элемент списка или поля объекта.
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список. 
+- Obj — указатель на очередной элемент списка или поля объекта.
 
 Функция `Field` возвращает указатель на поле по его имени из объекта заданного в Self. 
 Вместо имени поля можно задать номер элемента в списке или номер поля. Нумерация начинается с 0.
@@ -324,9 +324,9 @@ END
 
 Процедура `ForEach` извлекает каждый элемент списка или каждое поле объекта из указателя на JSON заданного в Self.
 Возвращаются следующие значения:
-- Idx - индекс элемента списка или номер поля в объекте. Начинается с 1.
-- Name - имя очередного поля, если Self - объект. Или индекс элемента списка, начиная с 0, если Self - список.
-- Obj - указатель на очередной элемент списка или поля объекта.
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список.
+- Obj — указатель на очередной элемент списка или поля объекта.
 
 Функция `Add_` добавляет новый элемент в конец списка, указатель на который указан в параметре Self.
 Добавляемый элемент указывается в параметре Obj, который должен быть указателем на один из потомков `TlkJSONbase`.
@@ -367,6 +367,311 @@ END
 Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число. Если параметр Self не задан, то вернёт 5.
 
 Функция `SelfTypeName` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как строка. Если параметр Self не задан, то вернёт `'jsList'`.
+
+### Пакет JS$METH
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$METH
+AS
+BEGIN
+  /* TlkJSONbase = class
+     TlkJSONobjectmethod = class(TlkJSONbase)
+  */
+  FUNCTION MethodObjValue(Self TY$POINTER) RETURNS TY$POINTER;
+  FUNCTION MethodName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE = NULL /* Get */) RETURNS VARCHAR(128) CHARACTER SET NONE;
+  FUNCTION MethodGenerate(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Obj TY$POINTER /* js$Base */)
+    RETURNS TY$POINTER /* js$Meth */;
+END
+```
+
+Как видно из комментария этот пакет является калькой с класса `TlkJSONobjectmethod`. Он представляет собой пару ключ — значение.
+
+Функция `MethodObjValue` возвращает указатель на значение из пары ключ-значение, указанной в параметре Self.
+
+Функция `MethodName` возвращает или устанавливает имя ключа для пары ключ-значение, указанной в параметре Self.
+Если параметр Name не указан, то возвращает имя ключа, если указан, то устанавливает новое имя ключа.
+
+Функция создаёт новую пару ключ-значение и возвращает указатель на неё. В параметре Name указывается имя ключа, в параметре — указатель на значение ключа.
+
+### Пакет JS$NULL
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$NULL
+AS
+BEGIN
+  /* TlkJSONbase = class
+     TlkJSONnull = class(TlkJSONbase)
+  */
+  FUNCTION Value_(Self TY$POINTER) RETURNS SMALLINT;
+
+  FUNCTION Generate(Self TY$POINTER = NULL /* NULL - class function */) RETURNS TY$POINTER;
+
+  FUNCTION SelfType(Self TY$POINTER = NULL /* NULL - class function */) RETURNS SMALLINT;
+  FUNCTION SelfTypeName(Self TY$POINTER = NULL /* NULL - class function */) RETURNS VARCHAR(32) CHARACTER SET NONE;
+END
+```
+
+Как видно из комментария этот пакет является калькой с класса `TlkJSONnull`. Он предназначен для обработки значения NULL.
+
+Функция `Value_` - возвращает 0, если значение объекта в Self представляет собой значение null (jsNull), и 1 в противном случае.
+
+Функция `Generate` возвращает указатель на объект `TlkJSONnull`, который представляет собой значение null.
+Параметр Self - указатель на JSON объект для которого устанавливается значение null.
+Значение параметра Self будет возращено функцией, если оно отлично от NULL, в противном случае вернёт указатель на новый объект `TlkJSONnull`.
+
+Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число. Если параметр Self не задан, то вернёт 4.
+
+Функция `SelfTypeName` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как строка. Если параметр Self не задан, то вернёт `'jsNull'`.
+
+### Пакет JS$NUM
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$NUM
+AS
+BEGIN
+  /* TlkJSONbase = class
+     TlkJSONnumber = class(TlkJSONbase)
+  */
+  FUNCTION Value_(Self TY$POINTER, Num DOUBLE PRECISION = NULL /* Get */) RETURNS DOUBLE PRECISION;
+
+  FUNCTION Generate(Self TY$POINTER = NULL /* NULL - class function */, Num DOUBLE PRECISION = 0) RETURNS TY$POINTER;
+
+  FUNCTION SelfType(Self TY$POINTER = NULL /* NULL - class function */) RETURNS SMALLINT;
+  FUNCTION SelfTypeName(Self TY$POINTER = NULL /* NULL - class function */) RETURNS VARCHAR(32) CHARACTER SET NONE;
+END
+```
+
+Как видно из комментария этот пакет является калькой с класса `TlkJSONnumber`. Он предназначен для обработки числовых значений.
+
+Функция `Value_` возвращает или устанавливает в значение числового типа для объекта заданного в параметре Self. Если параметр Num не задан, то значение будет возвращено, если задан — установлено.
+Обратите внимание, NULL не возвращается и не может быть установлено этим методом, для этого существует отдельный пакет `JS$NULL`.
+
+Функция `Generate` возвращает указатель на объект `TlkJSONnumber`, который представляет собой значение числового типа в JSON.
+Параметр Self — указатель на JSON объект для которого устанавливается числового значение в параметре Num.
+Значение параметра Self будет возращено функцией, если оно отлично от NULL, в противном случае вернёт указатель на новый объект `TlkJSONnumber`.
+
+Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число. Если параметр Self не задан, то вернёт 1.
+
+Функция `SelfTypeName` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как строка. Если параметр Self не задан, то вернёт `'jsNumber'`.
+
+### Пакет JS$OBJ
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$OBJ
+AS
+BEGIN
+  /* TlkJSONbase = class
+     TlkJSONcustomlist = class(TlkJSONbase)
+     TlkJSONobject = class(TlkJSONcustomlist)
+  */
+  FUNCTION New_(UseHash BOOLEAN = TRUE) RETURNS TY$POINTER;
+  FUNCTION Dispose(Self TY$POINTER) RETURNS SMALLINT; /* 0 - succes */
+
+  PROCEDURE ForEach(Self TY$POINTER) RETURNS (Idx INTEGER,  Name VARCHAR(128) CHARACTER SET NONE, Obj TY$POINTER /* js$Meth */);
+
+  FUNCTION Add_(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Obj TY$POINTER) RETURNS INTEGER;
+  FUNCTION AddBoolean(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Bool BOOLEAN) RETURNS INTEGER;
+  FUNCTION AddDouble(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Dbl DOUBLE PRECISION) RETURNS INTEGER;
+  FUNCTION AddInteger(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Int_ INTEGER) RETURNS INTEGER;
+  FUNCTION AddString(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, Str VARCHAR(32765) CHARACTER SET NONE) RETURNS INTEGER;
+  FUNCTION AddWideString(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE, WStr BLOB SUB_TYPE TEXT) RETURNS INTEGER;
+
+  FUNCTION Delete_(Self TY$POINTER, Idx Integer) RETURNS SMALLINT;
+  FUNCTION IndexOfName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS INTEGER;
+  FUNCTION IndexOfObject(Self TY$POINTER, Obj TY$POINTER) RETURNS INTEGER;
+  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* 1..N = Idx */, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
+
+  FUNCTION Count_(Self TY$POINTER) RETURNS INTEGER;
+  FUNCTION Child(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
+
+  FUNCTION Generate(Self TY$POINTER = NULL /* NULL - class function */, UseHash BOOLEAN = TRUE) RETURNS TY$POINTER;
+
+  FUNCTION SelfType(Self TY$POINTER = NULL /* NULL - class function */) RETURNS SMALLINT;
+  FUNCTION SelfTypeName(Self TY$POINTER = NULL  /* NULL - class function */) RETURNS VARCHAR(32) CHARACTER SET NONE;
+
+  FUNCTION FieldByIndex(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
+  FUNCTION NameOf(Self TY$POINTER, Idx INTEGER) RETURNS VARCHAR(128) CHARACTER SET NONE;
+
+  FUNCTION GetBoolean(Self TY$POINTER, Idx INTEGER) RETURNS BOOLEAN;
+  FUNCTION GetDouble(Self TY$POINTER, Idx INTEGER) RETURNS DOUBLE PRECISION;
+  FUNCTION GetInteger(Self TY$POINTER, Idx INTEGER) RETURNS INTEGER;
+  FUNCTION GetString(Self TY$POINTER, Idx INTEGER) RETURNS VARCHAR(32765) CHARACTER SET NONE;
+  FUNCTION GetWideString(Self TY$POINTER, Idx INTEGER) RETURNS BLOB SUB_TYPE TEXT;
+
+  FUNCTION GetBooleanByName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS BOOLEAN;
+  FUNCTION GetDoubleByName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS DOUBLE PRECISION;
+  FUNCTION GetIntegerByName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS INTEGER;
+  FUNCTION GetStringByName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS VARCHAR(32765) CHARACTER SET NONE;
+  FUNCTION GetWideStringByName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS BLOB SUB_TYPE TEXT;
+END
+```
+
+Как видно из комментария этот пакет является калькой с класса `TlkJSONobject`. Он предназначен для обработки объектных значений.
+
+Функция `New_` создаёт и возвращает указатель на новый пустой объект. Если UseHash установлен в TRUE (значение по умолчанию), то для поиска полей внутри объекта будет использована HASH таблица, в противном случае поиск будет осуществляться простым перебором.
+
+Функция `Dispose` предназначена для освобождения указателя на JSON объект. Указатели, которые надо принудительно освобождать, появляются в результате парсинга или создания JSON.
+Не следует вызывать его для промежуточных объектов при разборе или сборке JSON. Он требуется только для объекта верхнего уровня.
+
+Процедура `ForEach` извлекает каждое поле объекта из указателя на JSON заданного в Self.
+Возвращаются следующие значения:
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список.
+- Obj — указатель на пару ключ-значение (для обработки такой пары необходимо использовать пакет `JS$METH`).
+
+Функция `Add_` добавляет новое поле в объект, указатель на который указан в параметре Self.
+Добавляемый элемент указывается в параметре Obj, который должен быть указателем на один из потомков `TlkJSONbase`.
+Имя поля указывается в параметре Name. Функция возвращает индекс вновь добавленного поля.
+
+Функция `AddBoolean` добавляет новое поле логического типа в объект, указатель на который указан в параметре Self.
+Имя поля указывается в параметре Name. Значение поля указывается в параметре Bool. Функция возвращает индекс вновь добавленного поля.
+
+Функция `AddDouble` добавляет новое поле вещественного типа в объект, указатель на который указан в параметре Self.
+Имя поля указывается в параметре Name. Значение поля указывается в параметре Dbl. Функция возвращает индекс вновь добавленного поля. 
+
+Функция `AddInteger` добавляет новое поле целочисленного типа в объект, указатель на который указан в параметре Self.
+Имя поля указывается в параметре Name. Значение поля указывается в параметре Int_. Функция возвращает индекс вновь добавленного поля.
+
+Функция `AddString` добавляет новое поле строкового типа (`VARCHAR(N)`) в объект, указатель на который указан в параметре Self.
+Имя поля указывается в параметре Name. Значение поля указывается в параметре Int_. Функция возвращает индекс вновь добавленного поля.
+
+Функция `AddWideString` добавляет новое поле типа `BLOB SUB_TYPE TEXT` в объект, указатель на который указан в параметре Self.
+Имя поля указывается в параметре Name. Значение поля указывается в параметре Int_. Функция возвращает индекс вновь добавленного поля.
+
+Функция `Delete_` удаляет поле из объекта с индексом Idx. Функция возвращает 0.
+
+Функция `IndexOfName` возвращает индекс поля по его имени. Указатель на объект задаётся в параметре Self.
+В параметре Obj задаётся указатель на элемент индекс которого определяется.
+
+Функция `IndexOfObject` возвращает индекс значения поля в объекте. Указатель на объект задаётся в параметре Self.
+В параметре Obj задаётся указатель на значения поля индекс которого определяется.
+
+Функция `Field` возвращает или устанавливает значение поля по его имени. Указатель на объект задаётся в параметре Self.
+Имя поля указывается в параметре Name.
+Вместо имени поля можно задать номер элемента в списке или номер поля. Нумерация начинается с 0.
+Если в параметре Obj указано значение отличное от NULL, то новое значение будет прописано в поле, в 
+противном случае функция вернёт указатель на значение поля. 
+
+Функция `Count_` возвращает количество полей в объекте, заданного в параметре Self.
+
+Функция `Child` возвращает или устанавливает значение для элемента с индексом Idx в объекте Self. Индексация начинается с 0. Если параметр Obj не задан, то возвращает указатель на элемент с индексов Idx.
+Если Obj указан, то устанавливает его значение в элемент с индексов Idx. Обратите внимание Obj это указатель на один из потомков `TlkJSONbase`.
+
+Функция `Generate` возвращает указатель на объект `TlkJSONobject`, который представляет собой объект в JSON.
+Если UseHash установлен в TRUE (значение по умолчанию), то для поиска полей внутри объекта будет использована HASH таблица, в противном случае поиск будет осуществляться простым перебором.
+Значение параметра Self будет возращено функцией, если оно отлично от NULL, в противном случае вернёт указатель на новый объект `TlkJSONobject`.
+
+Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число. Если параметр Self не задан, то вернёт 6.
+
+Функция `SelfTypeName` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как строка. Если параметр Self не задан, то вернёт `'jsObject'`.
+
+Функция `FieldByIndex` возвращает или устанавливает свойство как пару ключ-значение по заданному индексу Idx.  Указатель на объект задаётся в параметре Self.
+Для обработки пары ключ-значение необходимо использовать пакет `JS$METH`. Если в параметре Obj указано значение отличное от NULL, то новое значение будет поле будет записано по заданному индексу, в противном случае функция вернёт указатель на поле.
+
+Функция `NameOf` возвращает имя поля по его индексу заданному в параметре Idx. Указатель на объект задаётся в параметре Self.
+
+Функция `GetBoolean` возвращает логическое значение поля объекта с индексом Idx. Индексация начинается с 0.
+
+Функция `GetDouble` возвращает значение с плавающей точкой поля объекта с индексом Idx. Индексация начинается с 0.
+
+Функция `GetInteger` возвращает целочисленное значение поля объекта с индексом Idx. Индексация начинается с 0.
+
+Функция `GetString` возвращает символьное значение (`VARCHAR`) поля объекта с индексом Idx. Индексация начинается с 0.
+
+Функция `GetWideString` возвращает значение типа `BLOB SUN_TYPE TEXT` поля объекта с индексом Idx. Индексация начинается с 0.
+
+Функция `GetBooleanByName` возвращает логическое значение поля объекта по его имени Name. 
+
+Функция `GetDoubleByName` возвращает значение с плавающей точкой поля объекта по его имени Name. 
+
+Функция `GetIntegerByName` возвращает целочисленное значение поля объекта по его имени Name.
+
+Функция `GetStringByName` возвращает символьное значение (`VARCHAR`) поля объекта по его имени Name.
+
+Функция `GetWideStringByName` возвращает значение типа `BLOB SUN_TYPE TEXT` поля объекта по его имени Name. 
+
+### Пакет JS$OBJ
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$PTR
+AS
+BEGIN
+  FUNCTION New_
+    (UsePtr CHAR(3) CHARACTER SET NONE /* Tra - Transaction, Att - Attachment */, UseHash BOOLEAN = TRUE)
+    RETURNS TY$POINTER;
+  FUNCTION Dispose(UsePtr CHAR(3) CHARACTER SET NONE) RETURNS SMALLINT;
+
+  FUNCTION Tra RETURNS TY$POINTER;
+  FUNCTION Att RETURNS TY$POINTER;
+END
+```
+
+Этот пакет помогает следить за указателями, которые возникают при создании объектов JSON.
+
+Функция `New_` создаёт и возвращает указатель на новый пустой объект. 
+Если в параметр UsePtr передано значение 'Tra', то указатель будет привязан к транзакции, и по её завершении он будет автоматически удалён.
+Если в параметр UsePtr передано значение 'Att', то указатель будет привязан к соединению, и при его закрытии он будет автоматически удалён.
+Если UseHash установлен в TRUE (значение по умолчанию), то для поиска полей внутри объекта будет использована HASH таблица, в противном случае поиск будет осуществляться простым перебором.
+
+Функция `Dispose` удаляет указатель на JSON объект привязанный к транзакции или соединению.  
+Если в параметр UsePtr передано значение 'Tra', то будет удалён указатель привязанный к транзакции.
+Если в параметр UsePtr передано значение 'Att', то будет удалён указатель привязанный к соединению.
+
+Функция `Tra` возвращает указатель привязанный к транзакции.
+
+Функция `Att` возвращает указатель привязанный к соединению.
+
+### Пакет JS$STR
+
+Заголовок этого пакета выглядит следующим образом:
+
+```sql
+CREATE OR ALTER PACKAGE JS$STR
+AS
+BEGIN
+  /* TlkJSONbase = class
+     TlkJSONstring = class(TlkJSONbase)
+  */
+  FUNCTION Value_(Self TY$POINTER, Str VARCHAR(32765) CHARACTER SET NONE = NULL /* Get */) RETURNS VARCHAR(32765) CHARACTER SET NONE;
+  FUNCTION WideValue_(Self TY$POINTER, WStr BLOB SUB_TYPE TEXT = NULL /* Get */) RETURNS BLOB SUB_TYPE TEXT;
+
+  FUNCTION Generate(Self TY$POINTER = NULL /* NULL - class function */, Str VARCHAR(32765) CHARACTER SET NONE = '') RETURNS TY$POINTER;
+  FUNCTION WideGenerate(Self TY$POINTER = NULL /* NULL - class function */, WStr BLOB SUB_TYPE TEXT = '') RETURNS TY$POINTER;
+
+  FUNCTION SelfType(Self TY$POINTER = NULL /* NULL - class function */) RETURNS SMALLINT;
+  FUNCTION SelfTypeName(Self TY$POINTER = NULL /* NULL - class function */) RETURNS VARCHAR(32) CHARACTER SET NONE;
+END
+```
+
+Как видно из комментария этот пакет является калькой с класса `TlkJSONstring`. Он предназначен для обработки строковых значений.
+
+Функция `Value_` возвращает или устанавливает в значение строкового типа (`VARCHAR(N)`) для объекта заданного в параметре Self. Если параметр Str не задан, то значение будет возвращено, если задан — установлено.
+Обратите внимание, NULL не возвращается и не может быть установлено этим методом, для этого существует отдельный пакет `JS$NULL`.
+
+Функция `WideValue__` возвращает или устанавливает в значение типа `BLOB SUB_TYPE TEXT` для объекта заданного в параметре Self. Если параметр Str не задан, то значение будет возвращено, если задан — установлено.
+Обратите внимание, NULL не возвращается и не может быть установлено этим методом, для этого существует отдельный пакет `JS$NULL`.
+
+Функция `Generate` возвращает указатель на объект `TlkJSONstring`, который представляет собой значение строкового типа в JSON.
+Параметр Self — указатель на JSON объект для которого устанавливается строковое значение в параметре Str.
+Значение параметра Self будет возращено функцией, если оно отлично от NULL, в противном случае вернёт указатель на новый объект `TlkJSONstring`.
+
+Функция `WideGenerate` возвращает указатель на объект `TlkJSONstring`, который представляет собой значение строкового типа в JSON.
+Параметр Self — указатель на JSON объект для которого устанавливается длинное строковое значение (`BLOB SUB_TYPE TEXT`) в параметре Str.
+Значение параметра Self будет возращено функцией, если оно отлично от NULL, в противном случае вернёт указатель на новый объект `TlkJSONstring`.
+
+Функция `SelfType` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как число. Если параметр Self не задан, то вернёт 2.
+
+Функция `SelfTypeName` возвращает тип объекта для указателя заданного в параметре Self. Тип объекта возвращается как строка. Если параметр Self не задан, то вернёт `'jsString'`.
 
 ## Примеры
 
