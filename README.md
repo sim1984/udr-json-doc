@@ -93,7 +93,7 @@
 ```
 ***
 
-Установочный скрипт для базы данных созданной в кодировке UTF8 и исправленной ошибкой доступен по ссылке [udrJSON-utf8.sql](https://github.com/mnf71/udr-lkJSON/blob/main/verify.sql)
+Установочный скрипт для базы данных созданной в кодировке UTF8 и исправленной ошибкой доступен по ссылке [udrJSON-utf8.sql](https://github.com/sim1984/udr-json-doc/blob/master/udrJSON-utf8.sql)
 
 ```
 isql "inet4://localhost/test" -user SYSDBA -password masterkey -i udrJSON.sql
