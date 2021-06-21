@@ -64,10 +64,36 @@
 Замечание.
 
 Библиотека разрабатывалась с учётом того, что она будет работать с однобайтовой кодировкой, такой как WIN1251.
-Если ваша база создана в кодировке UTF8, то необходимо модифицировать скрипт регистрации заменив в нём `VARCHAR(32765)` на
-`VARCHAR(32765) CHARACTER SET NONE`, `VARCHAR(128)` - `VARCHAR(128) CHARACTER SET NONE`, `VARCHAR(32)` - `VARCHAR(32) CHARACTER SET NONE`,
-`CHAR(3)` - `CHAR(3) CHARACTER SET NONE`.
+Если ваша база создана в кодировке UTF8, то необходимо модифицировать скрипт регистрации заменив в нём `VARCHAR(32)` на `VARCHAR(8)`,
+`VARCHAR(128)` — `VARCHAR(32)`, `VARCHAR(32765)` — `VARCHAR(32765) CHARACTER SET NONE`.
+В последнем случае нельзя заменить на `VARCHAR(8191)`, поскольку 8191 * 4 = 32764, что не соответствует внутренней структуре, в которой отведено 32765 байт.
+
+Пакет `JS$PTR` содержит ошибку, которую я рекомендую исправить.
+
+Найдите в теле пакета функцию `Dispose` и замените её содержимое на
+
+```sql
+  FUNCTION Dispose(UsePtr CHAR(3)) RETURNS SMALLINT
+  AS
+    DECLARE js TY$POINTER;
+  BEGIN
+    IF (UPPER(UsePtr) = 'TRA') THEN js = tra(); ELSE
+    IF (UPPER(UsePtr) = 'ATT') THEN js = att(); ELSE
+      js = NULL;
+
+    IF (js IS NOT NULL)  THEN
+    BEGIN
+      IF (UPPER(UsePtr) = 'TRA') THEN RDB$SET_CONTEXT('USER_TRANSACTION', 'JS$PTR.TRANSACTION', NULL);
+      IF (UPPER(UsePtr) = 'ATT') THEN RDB$SET_CONTEXT('USER_SESSION', 'JS$PTR.ATTACHMENT', NULL);
+      RETURN js$Obj.Dispose(js);
+    END
+    ELSE
+      RETURN NULL;
+  END
+```
 ***
+
+Установочный скрипт для базы данных созданной в кодировке UTF8 и исправленной ошибкой доступен по ссылке [udrJSON-utf8.sql](https://github.com/mnf71/udr-lkJSON/blob/main/verify.sql)
 
 ```
 isql "inet4://localhost/test" -user SYSDBA -password masterkey -i udrJSON.sql
@@ -675,7 +701,126 @@ END
 
 ## Примеры
 
-### Разбор JSON 
+### Сборка JSON 
+
+Для примера возьмём базу данных employee. 
+Функция `MAKE_JSON_DEPARTMENT_TREE` выводит список подразделений в формате JSON в иерархическом виде.
+
+```sql
+CREATE OR ALTER FUNCTION MAKE_JSON_DEPARTMENT_TREE
+RETURNS BLOB SUB_TYPE TEXT
+AS
+  DECLARE VARIABLE JSON_TEXT BLOB SUB_TYPE TEXT;
+  DECLARE VARIABLE JSON          TY$POINTER;
+  DECLARE VARIABLE JSON_SUB_DEPS TY$POINTER;
+BEGIN
+  JSON = JS$OBJ.NEW_();
+  FOR
+      WITH RECURSIVE R
+      AS (SELECT
+              :JSON AS JSON,
+              CAST(NULL AS TY$POINTER) AS PARENT_JSON,
+              D.DEPT_NO,
+              D.DEPARTMENT,
+              D.HEAD_DEPT,
+              D.MNGR_NO,
+              D.BUDGET,
+              D.LOCATION,
+              D.PHONE_NO
+          FROM DEPARTMENT D
+          WHERE D.HEAD_DEPT IS NULL
+          UNION ALL
+          SELECT
+              JS$OBJ.NEW_() AS JSON,
+              R.JSON,
+              D.DEPT_NO,
+              D.DEPARTMENT,
+              D.HEAD_DEPT,
+              D.MNGR_NO,
+              D.BUDGET,
+              D.LOCATION,
+              D.PHONE_NO
+          FROM DEPARTMENT D
+            JOIN R
+                   ON D.HEAD_DEPT = R.DEPT_NO)
+      SELECT
+          JSON,
+          PARENT_JSON,
+          DEPT_NO,
+          DEPARTMENT,
+          HEAD_DEPT,
+          MNGR_NO,
+          BUDGET,
+          LOCATION,
+          PHONE_NO
+      FROM R AS CURSOR C_DEP
+  DO
+  BEGIN
+    -- для каждого нового подразделения заполняем значение полей JSON объекта
+    JS$OBJ.ADDSTRING(C_DEP.JSON, 'dept_no', C_DEP.DEPT_NO);
+    JS$OBJ.ADDSTRING(C_DEP.JSON, 'department', C_DEP.DEPARTMENT);
+    IF (C_DEP.HEAD_DEPT IS NOT NULL) THEN
+      JS$OBJ.ADDSTRING(C_DEP.JSON, 'head_dept', C_DEP.HEAD_DEPT);
+    ELSE
+      JS$OBJ.ADD_(C_DEP.JSON, 'head_dept', JS$NULL.GENERATE());
+    IF (C_DEP.MNGR_NO IS NOT NULL) THEN
+      JS$OBJ.ADDINTEGER(C_DEP.JSON, 'mngr_no', C_DEP.MNGR_NO);
+    ELSE
+      JS$OBJ.ADD_(C_DEP.JSON, 'mngr_no', JS$NULL.GENERATE());
+    -- тут возможно ADDSTRING лучше, так как гарантированно сохранит точность
+    JS$OBJ.ADDDOUBLE(C_DEP.JSON, 'budget', C_DEP.BUDGET);
+    JS$OBJ.ADDSTRING(C_DEP.JSON, 'location', C_DEP.LOCATION);
+    JS$OBJ.ADDSTRING(C_DEP.JSON, 'phone_no', C_DEP.PHONE_NO);
+    -- в каждое подразделение добавляем список, в который будут
+    -- вносится подчинённые подразделения
+    JS$OBJ.ADD_(C_DEP.JSON, 'departments', JS$LIST.GENERATE());
+    IF (C_DEP.PARENT_JSON IS NOT NULL) THEN
+    BEGIN
+      -- там где есть подразделения, есть и объект родительского объекта JSON
+      -- получаем из этого родительского объекта поле со списком
+      JSON_SUB_DEPS = JS$OBJ.FIELD(C_DEP.PARENT_JSON, 'departments');
+      -- и добавляем в него текущее подразделение
+      JS$LIST.ADD_(JSON_SUB_DEPS, C_DEP.JSON);
+    END
+  END
+  -- генерируем JSON в виде текста
+  JSON_TEXT = JS$FUNC.READABLETEXT(JSON);
+  -- не забываем очистить указтель
+  JS$OBJ.DISPOSE(JSON);
+  RETURN JSON_TEXT;
+  WHEN ANY DO
+  BEGIN
+    -- если была ошибка всё равно очищаем указатель
+    JS$OBJ.DISPOSE(JSON);
+    EXCEPTION;
+  END
+END
+```
+
+Здесь мы применили следующую хитрость: на самом верхнем уровне рекурсивного запроса используется указатель на ранее 
+созданный корневой объект JSON. Во рекурсивной части запроса, мы выводим JSON объект для родительского подразделения `PARENT_JSON` и JSON объект для 
+текущего подразделения `PARENT_JSON`. Таким образом, мы всегда знаем в какой JSON объект добавлять подчинённое подразделение.
+
+Далее пробегаем циклом по курсору и на каждой итерации добавляем значения полей дл текущего подразделения. 
+Обратите внимание для того, чтобы добавить значение NULL, приходится использовать вызов `JS$NULL.GENERATE()`. 
+Если вы не будете делать этого, то при вызове `JS$OBJ.ADDSTRING(C_DEP.JSON, 'head_dept', C_DEP.HEAD_DEPT)`, когда
+` C_DEP.HEAD_DEPT` равно NULL поле `head_dept` просто не будет добавлено.
+
+Также для каждого подразделения необходимо добавить JSON список, в который будут добавляться подчинённые подразделения.
+
+Если JSON объект родительского подразделения не NULL, то получаем разнее добавленный для него список с помощью функции `JS$OBJ.FIELD`
+и добавляем в него текущий объект JSON.
+
+Далее JSON объекта самого верхнего уровня можно сгененрировать текст, после чего сам объект нам больше не нужен и 
+необходимо очистить выделенный для него указатель с помощью функции `JS$OBJ.DISPOSE`.
+
+Обратите внимание на блок обработки исключений `WHEN ANY DO`. Он обязателен, поскольку даже когда произошла нам надо 
+освободить указатель, чтобы избежать утечки памяти.
+
+### Разбор JSON
+
+Разбирать JSON несколько сложнее, чем собирать его. Дело в том, что вам надо учитывать, что на вход может поступить 
+некорректный JSON, не только сам по себе, но и со структурой не отвечающей вашей логике.
 
 Предположим у вас есть JSON в котором содержится список людей с их характеристиками.
 
@@ -712,7 +857,7 @@ begin
   -- поэтому надо обработать такой случай самостоятельно
   if (json is null or json = nullPtr) then
     exception e_custom_error 'invalid json';
-  -- Опять же функции из этой библиотеки не проверяют корректность типов эелементов
+  -- Опять же функции из этой библиотеки не проверяют корректность типов элементов
   -- и не возвращают ошибку понятную. Нам надо проверить тот ли тип мы обрабатываем.
   -- Иначе js$list.foreach вернёт "Access violation"
   if (js$base.SelfTypeName(json) != 'jsList') then
@@ -723,7 +868,7 @@ begin
     as cursor c
   do
   begin
-    -- Проверяем, что эелемент массива - это объект, иначе
+    -- Проверяем, что элемент массива - это объект, иначе
     -- js$obj.GetIntegerByName вернёт "Access violation"
     if (js$base.SelfTypeName(c.Obj) != 'jsObject') then
       exception e_custom_error 'Element of list is not object';
@@ -766,3 +911,193 @@ set term ;^
 select id, name
 from parse_peoples_json( '[{"id": 1, "name": "Вася"}, {"id": 2, "name": null}]' )
 ```
+
+Посмотрим внимательно на скрипт разбора JSON. Первая особенность состоит в том, что функция `js$func.parsetext` 
+не сгенерирует исключение, если вместо JSON на вход подана любая другая строка. Она просто вернёт пустой указатель.
+Но, это не NULL как вам казалось, а указатель с содержимым `x'0000000000000000'`. Поэтому после выполнения
+этой функции надо проверить. а что же вам было возвращено, иначе вызовы последующий функций будут возвращать ошибку
+"Access violation".
+
+Далее важно проверять, какого типа объект JSON был возвращён. Если на входе вместо списка окажется объект или любой 
+другой тип, то вызов `js$list.foreach` вернёт "Access violation". То же самое произойдёт если вы вызовите любую другую 
+функцию, которая ожидает указатель на другой, не предназначенный для неё тип.
+
+Следующая особенность состоит в том, что всегда надо проверять наличие полей (свойств объекта). Если поля с заданным именем нет, то
+в некоторых случаях может быть возвращено не корректное значение (как в случае с `js$obj.GetIntegerByName`), 
+в других приведёт к ошибке преобразования типа.
+
+Обратите внимание, функции вроде `js$obj.GetIntegerByName` или `js$obj.GetSrtingByName` не могут вернуть значение NULL.
+Для распознавания значения NULL, вам надо проверять тип поля функцией `js$base.selftypename`.
+
+Как и в случае со сборкой JSON не забывайте освобождать указатель на JSON верхнего уровня, а также делать это в блоке обработки исключений
+`WHEN ANY DO`.
+
+Далее приведём пример разбора JSON, который был собран функцией `MAKE_JSON_DEPARTMENT_TREE` в примере выше.
+В тексте примера приведены комментарии поясняющие принцип разбора.
+
+```sql
+SET TERM ^ ;
+
+CREATE OR ALTER PACKAGE JSON_PARSE_DEPS
+AS
+BEGIN
+  PROCEDURE PARSE_DEPARTMENT_TREE (
+      JSON_TEXT BLOB SUB_TYPE TEXT)
+  RETURNS (
+      DEPT_NO    CHAR(3),
+      DEPARTMENT VARCHAR(25),
+      HEAD_DEPT  CHAR(3),
+      MNGR_NO    SMALLINT,
+      BUDGET     DECIMAL(18,2),
+      LOCATION   VARCHAR(15),
+      PHONE_NO   VARCHAR(20));
+END^
+
+RECREATE PACKAGE BODY JSON_PARSE_DEPS
+AS
+BEGIN
+  PROCEDURE GET_DEPARTMENT_INFO (
+      JSON TY$POINTER)
+  RETURNS (
+      DEPT_NO    CHAR(3),
+      DEPARTMENT VARCHAR(25),
+      HEAD_DEPT  CHAR(3),
+      MNGR_NO    SMALLINT,
+      BUDGET     DECIMAL(18,2),
+      LOCATION   VARCHAR(15),
+      PHONE_NO   VARCHAR(20),
+      JSON_LIST  TY$POINTER);
+
+  PROCEDURE PARSE_DEPARTMENT_TREE (
+      JSON_TEXT BLOB SUB_TYPE TEXT)
+  RETURNS (
+      DEPT_NO    CHAR(3),
+      DEPARTMENT VARCHAR(25),
+      HEAD_DEPT  CHAR(3),
+      MNGR_NO    SMALLINT,
+      BUDGET     DECIMAL(18,2),
+      LOCATION   VARCHAR(15),
+      PHONE_NO   VARCHAR(20))
+  AS
+    DECLARE VARIABLE JSON    TY$POINTER;
+    DECLARE VARIABLE NULLPTR TY$POINTER;
+  BEGIN
+    NULLPTR = X'0000000000000000';
+    JSON = JS$FUNC.PARSETEXT(JSON_TEXT);
+    -- если JSON некорректный js$func.parsetext не сгененрирует исключение!
+    -- и даже вернёт не NULL, а просто нулевой указаель
+    -- поэтому надо обработать такой случай самостоятельно
+    IF (JSON IS NULL OR JSON = NULLPTR) THEN
+      EXCEPTION E_CUSTOM_ERROR 'invalid json';
+    FOR
+      SELECT
+          INFO.DEPT_NO,
+          INFO.DEPARTMENT,
+          INFO.HEAD_DEPT,
+          INFO.MNGR_NO,
+          INFO.BUDGET,
+          INFO.LOCATION,
+          INFO.PHONE_NO
+      FROM JSON_PARSE_DEPS.GET_DEPARTMENT_INFO(:JSON) INFO
+      INTO
+          :DEPT_NO,
+          :DEPARTMENT,
+          :HEAD_DEPT,
+          :MNGR_NO,
+          :BUDGET,
+          :LOCATION,
+          :PHONE_NO
+    DO
+      SUSPEND;
+    JS$OBJ.DISPOSE(JSON);
+    WHEN ANY DO
+    BEGIN
+      JS$OBJ.DISPOSE(JSON);
+      EXCEPTION;
+    END
+  END
+
+  PROCEDURE GET_DEPARTMENT_INFO (
+      JSON TY$POINTER)
+  RETURNS (
+      DEPT_NO    CHAR(3),
+      DEPARTMENT VARCHAR(25),
+      HEAD_DEPT  CHAR(3),
+      MNGR_NO    SMALLINT,
+      BUDGET     DECIMAL(18,2),
+      LOCATION   VARCHAR(15),
+      PHONE_NO   VARCHAR(20),
+      JSON_LIST  TY$POINTER)
+  AS
+  BEGIN
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'dept_no') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "dept_no" not found';
+    DEPT_NO = JS$OBJ.GETSTRINGBYNAME(JSON, 'dept_no');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'department') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "department" not found';
+    DEPARTMENT = JS$OBJ.GETSTRINGBYNAME(JSON, 'department');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'head_dept') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "head_dept" not found';
+    IF (JS$BASE.SELFTYPENAME(JS$OBJ.FIELD(JSON, 'head_dept')) = 'jsNull') THEN
+      HEAD_DEPT = NULL;
+    ELSE
+      HEAD_DEPT = JS$OBJ.GETSTRINGBYNAME(JSON, 'head_dept');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'mngr_no') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "mngr_no" not found';
+    IF (JS$BASE.SELFTYPENAME(JS$OBJ.FIELD(JSON, 'mngr_no')) = 'jsNull') THEN
+      MNGR_NO = NULL;
+    ELSE
+      MNGR_NO = JS$OBJ.GETINTEGERBYNAME(JSON, 'mngr_no');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'budget') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "budget" not found';
+    BUDGET = JS$OBJ.GETDOUBLEBYNAME(JSON, 'budget');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'location') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "location" not found';
+    LOCATION = JS$OBJ.GETSTRINGBYNAME(JSON, 'location');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'phone_no') < 0) THEN
+      EXCEPTION E_CUSTOM_ERROR 'field "phone_no" not found';
+    PHONE_NO = JS$OBJ.GETSTRINGBYNAME(JSON, 'phone_no');
+    IF (JS$OBJ.INDEXOFNAME(JSON, 'departments') >= 0) THEN
+    BEGIN
+      -- получаем список подчинённых подразделений
+      JSON_LIST = JS$OBJ.FIELD(JSON, 'departments');
+      IF (JS$BASE.SELFTYPENAME(JSON_LIST) != 'jsList') THEN
+        EXCEPTION E_CUSTOM_ERROR 'Invalid JSON format. Field "departments" must be list';
+      SUSPEND;
+      -- обходим этот список и рекурсивно вызываем для него процедуру извлечения
+      -- информации о каждом подраздении
+      FOR
+        SELECT
+            INFO.DEPT_NO,
+            INFO.DEPARTMENT,
+            INFO.HEAD_DEPT,
+            INFO.MNGR_NO,
+            INFO.BUDGET,
+            INFO.LOCATION,
+            INFO.PHONE_NO,
+            INFO.JSON_LIST
+        FROM JS$LIST.FOREACH(:JSON_LIST) L
+          LEFT JOIN JSON_PARSE_DEPS.GET_DEPARTMENT_INFO(L.OBJ) INFO
+                 ON TRUE
+        INTO
+            :DEPT_NO,
+            :DEPARTMENT,
+            :HEAD_DEPT,
+            :MNGR_NO,
+            :BUDGET,
+            :LOCATION,
+            :PHONE_NO,
+            :JSON_LIST
+      DO
+        SUSPEND;
+    END
+    ELSE
+      EXCEPTION E_CUSTOM_ERROR 'Invalid JSON format. Field "departments" not found' || DEPT_NO;
+  END
+END
+^
+
+SET TERM ; ^
+```
+
+
