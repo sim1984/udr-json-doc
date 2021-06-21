@@ -701,7 +701,7 @@ END
 
 ## Примеры
 
-
+Исходный код процедур и функций примеров вы можете скачать по ссылке [examples.sql](https://github.com/sim1984/udr-json-doc/blob/master/examlpes.sql).
 
 ### Сборка JSON 
 
