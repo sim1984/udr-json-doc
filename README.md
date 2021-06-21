@@ -56,7 +56,7 @@
 
 После скачивания или сборки готовую библиотеку необходимо разместить в каталог
 - в Windows — `Firebird30\plugins\udr`, где Firebird30 — корневой каталог установки Firebird
-- в Linix — `/firebird/plugins/udr`
+- в Linux — `/firebird/plugins/udr`
 
 Далее библиотеку необходимо зарегистрировать в вашей базе данных. Для этого необходимо выполнить следующий скрипт [udrJSON.sql](https://github.com/mnf71/udr-lkJSON/blob/main/udrJSON.sql).
 
