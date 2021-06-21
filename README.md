@@ -67,30 +67,6 @@
 Если ваша база создана в кодировке UTF8, то необходимо модифицировать скрипт регистрации заменив в нём `VARCHAR(32)` на `VARCHAR(8)`,
 `VARCHAR(128)` — `VARCHAR(32)`, `VARCHAR(32765)` — `VARCHAR(32765) CHARACTER SET NONE`.
 В последнем случае нельзя заменить на `VARCHAR(8191)`, поскольку 8191 * 4 = 32764, что не соответствует внутренней структуре, в которой отведено 32765 байт.
-
-Пакет `JS$PTR` содержит ошибку, которую я рекомендую исправить.
-
-Найдите в теле пакета функцию `Dispose` и замените её содержимое на
-
-```sql
-  FUNCTION Dispose(UsePtr CHAR(3)) RETURNS SMALLINT
-  AS
-    DECLARE js TY$POINTER;
-  BEGIN
-    IF (UPPER(UsePtr) = 'TRA') THEN js = tra(); ELSE
-    IF (UPPER(UsePtr) = 'ATT') THEN js = att(); ELSE
-      js = NULL;
-
-    IF (js IS NOT NULL)  THEN
-    BEGIN
-      IF (UPPER(UsePtr) = 'TRA') THEN RDB$SET_CONTEXT('USER_TRANSACTION', 'JS$PTR.TRANSACTION', NULL);
-      IF (UPPER(UsePtr) = 'ATT') THEN RDB$SET_CONTEXT('USER_SESSION', 'JS$PTR.ATTACHMENT', NULL);
-      RETURN js$Obj.Dispose(js);
-    END
-    ELSE
-      RETURN NULL;
-  END
-```
 ***
 
 Установочный скрипт для базы данных созданной в кодировке UTF8 и исправленной ошибкой доступен по ссылке [udrJSON-utf8.sql](https://github.com/sim1984/udr-json-doc/blob/master/udrJSON-utf8.sql)
