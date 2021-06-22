@@ -8,16 +8,15 @@ RETURNS (
     ID   INTEGER,
     NAME VARCHAR(120))
 AS
-declare variable nullPtr TY$POINTER = x'0000000000000000';
 declare variable json TY$POINTER;
 declare variable jsonId TY$POINTER;
 declare variable jsonName TY$POINTER;
 begin
   json = js$func.parsetext(json_str);
-  -- если JSON некорректный js$func.parsetext не сгененрирует исключение!
-  -- и даже вернёт не NULL, а просто нулевой указаель
+  -- если JSON некорректный js$func.parsetext не сгененрирует исключение,
+  -- а вернёт нулевой указатель
   -- поэтому надо обработать такой случай самостоятельно
-  if (json is null or json = nullPtr) then
+  if (js$ptr.isNull(json)) then
     exception e_custom_error 'invalid json';
   -- Опять же функции из этой библиотеки не проверяют корректность типов элементов
   -- и не возвращают ошибку понятную. Нам надо проверить тот ли тип мы обрабатываем.
@@ -219,14 +218,12 @@ BEGIN
       PHONE_NO   VARCHAR(20))
   AS
     DECLARE VARIABLE JSON    TY$POINTER;
-    DECLARE VARIABLE NULLPTR TY$POINTER;
   BEGIN
-    NULLPTR = X'0000000000000000';
     JSON = JS$FUNC.PARSETEXT(JSON_TEXT);
-    -- если JSON некорректный js$func.parsetext не сгененрирует исключение!
-    -- и даже вернёт не NULL, а просто нулевой указаель
+    -- если JSON некорректный js$func.parsetext не сгененрирует исключение,
+    -- а просто вернёт нулевой указатель
     -- поэтому надо обработать такой случай самостоятельно
-    IF (JSON IS NULL OR JSON = NULLPTR) THEN
+    IF (JS$PTR.ISNULL(JSON)) THEN
       EXCEPTION E_CUSTOM_ERROR 'invalid json';
     FOR
       SELECT
