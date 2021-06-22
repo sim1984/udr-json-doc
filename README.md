@@ -115,7 +115,7 @@ BEGIN
   */
   FUNCTION Dispose(Self TY$POINTER) RETURNS SMALLINT; /* 0 - succes */
 
-  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* 1..N = Idx */) RETURNS TY$POINTER;
+  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* = Idx */) RETURNS TY$POINTER;
 
   FUNCTION Count_(Self TY$POINTER) RETURNS INTEGER;
   FUNCTION Child(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
@@ -204,7 +204,7 @@ BEGIN
   PROCEDURE ForEach
     (Self TY$POINTER) RETURNS (Idx Integer, Name VARCHAR(128) CHARACTER SET NONE, Obj TY$POINTER /* js$Base */);
 
-  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* 1..N = Idx */) RETURNS TY$POINTER;
+  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* = Idx */) RETURNS TY$POINTER;
   FUNCTION Count_(Self TY$POINTER) RETURNS INTEGER;
   FUNCTION Child(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
 
@@ -221,7 +221,7 @@ END
 
 Процедура `ForEach` извлекает каждый элемент списка или каждое поле объекта из указателя на JSON заданного в Self.
 Возвращаются следующие значения:
-- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 0.
 - Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список. 
 - Obj — указатель на очередной элемент списка или поля объекта.
 
@@ -309,7 +309,7 @@ BEGIN
 
   FUNCTION Delete_(Self TY$POINTER, Idx Integer) RETURNS SMALLINT;
   FUNCTION IndexOfObject(Self TY$POINTER, Obj TY$POINTER) RETURNS INTEGER;
-  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* 1..N = Idx */) RETURNS TY$POINTER;
+  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* = Idx */) RETURNS TY$POINTER;
 
   FUNCTION Count_(Self TY$POINTER) RETURNS INTEGER;
   FUNCTION Child(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
@@ -325,7 +325,7 @@ END
 
 Процедура `ForEach` извлекает каждый элемент списка или каждое поле объекта из указателя на JSON заданного в Self.
 Возвращаются следующие значения:
-- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 0.
 - Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список.
 - Obj — указатель на очередной элемент списка или поля объекта.
 
@@ -486,7 +486,7 @@ BEGIN
   FUNCTION Delete_(Self TY$POINTER, Idx Integer) RETURNS SMALLINT;
   FUNCTION IndexOfName(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE) RETURNS INTEGER;
   FUNCTION IndexOfObject(Self TY$POINTER, Obj TY$POINTER) RETURNS INTEGER;
-  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* 1..N = Idx */, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
+  FUNCTION Field(Self TY$POINTER, Name VARCHAR(128) CHARACTER SET NONE /* = Idx */, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
 
   FUNCTION Count_(Self TY$POINTER) RETURNS INTEGER;
   FUNCTION Child(Self TY$POINTER, Idx INTEGER, Obj TY$POINTER = NULL /* Get */) RETURNS TY$POINTER;
@@ -522,7 +522,7 @@ END
 
 Процедура `ForEach` извлекает каждое поле объекта из указателя на JSON заданного в Self.
 Возвращаются следующие значения:
-- Idx — индекс элемента списка или номер поля в объекте. Начинается с 1.
+- Idx — индекс элемента списка или номер поля в объекте. Начинается с 0.
 - Name — имя очередного поля, если Self — объект. Или индекс элемента списка, начиная с 0, если Self — список.
 - Obj — указатель на пару ключ-значение (для обработки такой пары необходимо использовать пакет `JS$METH`).
 
